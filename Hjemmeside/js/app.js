@@ -220,30 +220,124 @@ function readHabits(form, prefix) {
 
 function renderNav(active) {
   const user = sessionUser()
-  let links = [['vaerelser.html', 'Værelser']]
+  let links
   if (isSeeker(user)) {
-    links.push(['favoritter.html', 'Favoritter'], ['beskeder.html', 'Beskeder'], ['profil.html', 'Profil'])
+    links = [['vaerelser.html', 'Værelser'], ['favoritter.html', 'Favoritter'], ['beskeder.html', 'Beskeder']]
   } else if (user && user.role === 'admin') {
-    links.push(['profil.html', 'Profil'], ['beskeder.html', 'Beskeder'], ['admin.html', 'Admin'])
+    links = [['vaerelser.html', 'Værelser'], ['beskeder.html', 'Beskeder'], ['admin.html', 'Admin']]
   } else if (isHost(user)) {
-    links.push(['profil.html', 'Mine opslag'], ['ansogere.html', 'Ansøgere'], ['beskeder.html', 'Beskeder'])
+    links = [['vaerelser.html', 'Værelser'], ['profil.html', 'Mine opslag'], ['ansogere.html', 'Ansøgere'], ['beskeder.html', 'Beskeder']]
+  } else {
+    links = [['vaerelser.html', 'Værelser'], ['index.html#hvordan', 'Sådan virker det'], ['index.html#udlejere', 'For udlejere']]
   }
-  let right = links.map(([href, label]) => `<a href="${href}" ${active === href ? 'style="background:rgba(108,78,49,.12)"' : ''}>${label}</a>`).join('')
+  const center = links.map(([href, label]) => `<a href="${href}" ${active === href ? 'class="active" aria-current="page"' : ''}>${label}</a>`).join('')
+  let right = ''
   if (user) {
-    if (user.role === 'admin' || user.email === 'stefan@roomtogether.dk') {
-      if (!links.some(([h]) => h === 'admin.html')) right += `<a href="admin.html">Admin</a>`
-    }
     right += `<button class="linkish" onclick="logout()">Log ud</button>`
     right += `<a class="btn btn-primary btn-sm" href="profil.html">${user.name}</a>`
   } else {
-    right += `<a href="login.html">Log ind</a>`
+    right += `<a class="linkish" href="login.html">Log ind</a>`
     right += `<a class="btn btn-primary btn-sm" href="opret.html">Opret profil</a>`
   }
   document.getElementById('site-nav').innerHTML = `
     <header class="site-header"><div class="wrap nav">
       <a class="brand" href="index.html"><img src="Logo/roomtogether-logo.png" alt="RoomTogether"></a>
-      <nav class="nav-links">${right}</nav>
+      <button class="nav-toggle" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      <div class="nav-menu">
+        <nav class="nav-links">${center}</nav>
+        <div class="nav-actions">${right}</div>
+      </div>
     </div></header>`
+  const header = document.querySelector('.site-header')
+  const toggle = header.querySelector('.nav-toggle')
+  toggle.onclick = () => {
+    const open = header.classList.toggle('open')
+    toggle.setAttribute('aria-expanded', open)
+  }
+  renderFooter()
+}
+
+function renderFooter() {
+  if (document.querySelector('.footer')) return
+  const footer = document.createElement('footer')
+  footer.className = 'footer'
+  footer.innerHTML = `<div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="Logo/roomtogether-logo.png" alt="RoomTogether">
+        <p>Find en roommate, der matcher din hverdag — ikke kun din husleje.</p>
+      </div>
+      <div>
+        <h4>Find bolig</h4>
+        <a href="vaerelser.html">Alle værelser</a>
+        <a href="vaerelser.html?sort=price">Billigste værelser</a>
+        <a href="opret.html?role=seeker">Opret søgeprofil</a>
+      </div>
+      <div>
+        <h4>Udlej</h4>
+        <a href="opret.html?role=host">Opret opslag</a>
+        <a href="index.html#udlejere">For udlejere</a>
+        <a href="index.html#hvordan">Sådan virker det</a>
+      </div>
+      <div>
+        <h4>Konto</h4>
+        <a href="login.html">Log ind</a>
+        <a href="opret.html">Opret profil</a>
+        <a href="glemt-kode.html">Glemt kodeord</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© ${new Date().getFullYear()} RoomTogether · København</span>
+      <span>Demo: maja@demo.dk (udlejer) · niklas@demo.dk (lejer) · kode: demo123</span>
+    </div>
+  </div>`
+  const scripts = document.querySelector('body > script')
+  document.body.insertBefore(footer, scripts)
+}
+
+function dateDa(iso) {
+  if (!iso) return ''
+  const d = new Date(iso + 'T00:00:00')
+  return d.toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function availability(listing) {
+  if (!listing.moveIn || listing.moveIn <= todayIso()) return { now: true, label: 'Ledig nu' }
+  return { now: false, label: 'Ledig fra ' + dateDa(listing.moveIn) }
+}
+
+function isFavorite(user, listingId) {
+  return isSeeker(user) && db().favorites.some(f => f.userId === user.id && f.listingId === listingId)
+}
+
+// Returnerer ny tilstand (true = gemt), eller null hvis brugeren ikke må gemme
+function toggleFavorite(listingId) {
+  const u = sessionUser()
+  if (!u) {
+    location.href = 'login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search)
+    return null
+  }
+  if (!isSeeker(u)) { toast('Kun lejere kan gemme værelser'); return null }
+  const d = db()
+  const i = d.favorites.findIndex(f => f.userId === u.id && f.listingId === listingId)
+  if (i >= 0) d.favorites.splice(i, 1)
+  else d.favorites.push({ userId: u.id, listingId })
+  save(d)
+  toast(i >= 0 ? 'Fjernet fra favoritter' : 'Gemt i favoritter')
+  return i < 0
+}
+
+function favButtonClick(btn, e) {
+  e.preventDefault()
+  e.stopPropagation()
+  const state = toggleFavorite(btn.dataset.id)
+  if (state == null) return
+  btn.classList.toggle('on', state)
+  btn.setAttribute('aria-pressed', state)
 }
 
 function requireLogin(redirect) {
@@ -256,18 +350,31 @@ function requireLogin(redirect) {
 
 function listingCard(listing, score) {
   const host = db().users.find(u => u.id === listing.userId)
+  const me = sessionUser()
+  const avail = availability(listing)
+  const fav = isFavorite(me, listing.id)
   const pill = score == null ? '' : `<span class="match-pill ${matchClass(score)}">${matchLabel(score)}</span>`
-  return `<a class="listing" href="vaerelse.html?id=${listing.id}">
+  const favBtn = isHost(me) || (me && me.role === 'admin') ? '' :
+    `<button class="fav-btn ${fav ? 'on' : ''}" data-id="${listing.id}" aria-pressed="${fav}" aria-label="Gem som favorit" onclick="favButtonClick(this, event)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 4.3 2.4.7-1.2 2.2-2.4 4.3-2.4 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>
+    </button>`
+  return `<article class="listing">
     <div class="listing-media">
-      ${listing.image ? `<img src="${listing.image}" alt="">` : ''}
-      <span class="badge">${listing.area}</span>
+      ${listing.image ? `<img src="${listing.image}" alt="" loading="lazy">` : ''}
+      <span class="badge ${avail.now ? 'badge-now' : ''}">${avail.label}</span>
+      ${favBtn}
     </div>
-    <div>
-      <h3>${listing.title}</h3>
-      <div class="meta"><span>${money(listing.rent)}/md</span><span>${listing.size} m²</span><span>${listing.moveIn}</span></div>
-      <div class="meta" style="margin-top:.45rem">${pill}<span>${host ? host.name : ''}</span></div>
+    <div class="listing-body">
+      <p class="listing-area">${listing.area}, København</p>
+      <h3><a class="listing-link" href="vaerelse.html?id=${listing.id}">${listing.title}</a></h3>
+      <p class="listing-desc">${listing.desc || ''}</p>
+      <div class="listing-foot">
+        <span class="price">${money(listing.rent)}<small>/md</small></span>
+        <span class="meta"><span>${listing.size} m²</span>${host ? `<span>${host.name}</span>` : ''}</span>
+      </div>
+      ${pill ? `<div class="listing-match">${pill}</div>` : ''}
     </div>
-  </a>`
+  </article>`
 }
 
 function chatKey(a, b) {

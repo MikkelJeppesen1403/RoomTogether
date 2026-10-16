@@ -8,7 +8,7 @@
 </head>
 <body>
   <div id="site-nav"></div>
-  <main class="wrap" id="page" style="padding-bottom:3rem"></main>
+  <main class="wrap" id="page" style="padding-bottom:2rem"></main>
   <script src="js/app.js"></script>
   <script>
     renderNav('vaerelser.html')
@@ -20,48 +20,74 @@
       page.innerHTML = '<div class="empty" style="margin-top:2rem">Opslag findes ikke.</div>'
     } else {
       const host = data.users.find(u => u.id === listing.userId)
+      document.title = listing.title + ' — RoomTogether'
       const me = sessionUser()
       const score = isSeeker(me) ? matchScore(me.habits, listing.habits) : null
       const fav = isSeeker(me) && data.favorites.some(f => f.userId === me.id && f.listingId === listing.id)
       const own = me && me.id === listing.userId
       const actions = []
       if (!own) actions.push('<button class="btn btn-primary" id="msg">Skriv besked</button>')
-      if (isSeeker(me) || !me) actions.push(`<button class="btn btn-ghost" id="fav">${fav ? 'Fjern favorit' : 'Gem favorit'}</button>`)
+      if (isSeeker(me) || !me) actions.push(`<button class="btn btn-ghost" id="fav">${fav ? '♥ Gemt' : '♡ Gem favorit'}</button>`)
       if (own) actions.push('<a class="btn btn-ghost" href="ansogere.html">Se ansøgere</a>')
       actions.push('<button class="btn btn-ghost" id="report">Anmeld</button>')
 
+      const avail = availability(listing)
+      const facts = [
+        ['Husleje', money(listing.rent) + '/md'],
+        ['Depositum', money(listing.deposit)],
+        ['Størrelse', listing.size + ' m²'],
+        ['Område', listing.area],
+        ['Indflytning', avail.now ? 'Ledig nu' : dateDa(listing.moveIn)],
+        ['Lejeperiode', listing.period]
+      ]
+      const similar = data.listings
+        .filter(l => l.id !== listing.id)
+        .map(l => ({ l, d: (l.area === listing.area ? 0 : 1) * 10000 + Math.abs(l.rent - listing.rent) }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 3)
+
       page.innerHTML = `
-        <div class="page-head"><a href="vaerelser.html" style="opacity:.7">← Tilbage</a></div>
+        <div class="page-head"><a href="vaerelser.html" class="text-link">← Alle værelser</a></div>
         <div class="detail">
           <div>
-            <div class="detail-gallery">${listing.image ? `<img src="${listing.image}" alt="">` : ''}</div>
+            <div class="detail-gallery">
+              ${listing.image ? `<img src="${listing.image}" alt="">` : ''}
+              <span class="badge ${avail.now ? 'badge-now' : ''}">${avail.label}</span>
+            </div>
             <div class="panel" style="margin-top:1rem">
-              <h2 style="font-family:var(--display);margin-bottom:.5rem">${listing.title}</h2>
-              <p style="opacity:.8;margin-bottom:1rem">${listing.desc}</p>
-              <div class="meta">
-                <span>${money(listing.rent)}/md</span>
-                <span>Depositum ${money(listing.deposit)}</span>
-                <span>${listing.size} m²</span>
-                <span>${listing.area}</span>
-                <span>Indflytning ${listing.moveIn}</span>
-                <span>${listing.period}</span>
-              </div>
+              <p class="listing-area">${listing.area}, København</p>
+              <h1 class="detail-title">${listing.title}</h1>
+              <p style="opacity:.85;margin-bottom:1.25rem">${listing.desc}</p>
+              <dl class="facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
             </div>
           </div>
-          <div class="panel">
+          <aside class="panel detail-side">
+            <div class="detail-price"><span class="price">${money(listing.rent)}<small>/md</small></span>
+              ${score != null ? `<span class="match-pill ${matchClass(score)}">${matchLabel(score)}</span>` : ''}</div>
+            <hr>
             <p class="eyebrow">Nuværende beboer</p>
-            ${host && host.photo ? `<img class="avatar" src="${host.photo}" alt="${host.name}" style="margin:.5rem 0 1rem">` : ''}
-            <h2 style="font-family:var(--display);font-size:1.6rem;margin:.3rem 0">${host ? host.name : 'Ukendt'}, ${host ? host.age : ''}</h2>
-            <p style="opacity:.8;margin-bottom:1rem">${host ? host.bio : ''}</p>
+            <div class="host-row">
+              ${host && host.photo ? `<img class="avatar" src="${host.photo}" alt="${host.name}">` : ''}
+              <div>
+                <h2>${host ? host.name : 'Ukendt'}${host && host.age ? ', ' + host.age : ''}</h2>
+                <p class="review-meta">${host ? host.work || '' : ''}</p>
+              </div>
+            </div>
+            <p style="opacity:.8;margin:.75rem 0 1rem">${host ? host.bio : ''}</p>
             ${score != null
-              ? `<p class="match-pill ${matchClass(score)}" style="margin-bottom:1rem">${matchLabel(score)} på vaner</p>`
+              ? ''
               : isHost(me)
-                ? '<p style="opacity:.7;margin-bottom:1rem">Du er udlejer — match vises, når du åbner en ansøgers profil.</p>'
-                : '<p style="opacity:.7;margin-bottom:1rem">Log ind som lejer for at se match.</p>'}
-            <div class="habits">${HABIT_KEYS.map(([k,label]) => `<div class="habit"><b>${label}</b>${listing.habits[k]}</div>`).join('')}</div>
-            <div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.25rem">${actions.join('')}</div>
-          </div>
-        </div>`
+                ? '<p class="hint">Du er udlejer — match vises, når du åbner en ansøgers profil.</p>'
+                : '<p class="hint">Log ind som lejer for at se, hvor godt I matcher.</p>'}
+            <p class="eyebrow" style="margin-top:.5rem">Vaner i hjemmet</p>
+            <div class="habits">${HABIT_KEYS.map(([k,label]) => `<div class="habit ${me && isSeeker(me) && me.habits[k] === listing.habits[k] ? 'same' : ''}"><b>${label}</b>${listing.habits[k]}</div>`).join('')}</div>
+            <div class="detail-actions">${actions.join('')}</div>
+          </aside>
+        </div>
+        ${similar.length ? `<section style="padding-bottom:1rem">
+          <h2 class="section-title">Lignende værelser</h2>
+          <div class="grid">${similar.map(({ l }) => listingCard(l, isSeeker(me) ? matchScore(me.habits, l.habits) : null)).join('')}</div>
+        </section>` : ''}`
 
       const msgBtn = document.getElementById('msg')
       if (msgBtn) msgBtn.onclick = () => {
@@ -75,15 +101,8 @@
       }
       const favBtn = document.getElementById('fav')
       if (favBtn) favBtn.onclick = () => {
-        if (!requireLogin('vaerelse.html?id=' + id)) return
-        const u = sessionUser()
-        if (!isSeeker(u)) return toast('Kun lejere kan gemme værelser')
-        const d = db()
-        const i = d.favorites.findIndex(f => f.userId === u.id && f.listingId === listing.id)
-        if (i >= 0) d.favorites.splice(i, 1)
-        else d.favorites.push({ userId: u.id, listingId: listing.id })
-        save(d)
-        location.reload()
+        const state = toggleFavorite(listing.id)
+        if (state != null) favBtn.textContent = state ? '♥ Gemt' : '♡ Gem favorit'
       }
       document.getElementById('report').onclick = () => {
         if (!requireLogin('vaerelse.html?id=' + id)) return
