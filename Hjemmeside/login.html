@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log ind — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="auth-shell wrap">
+    <div class="panel auth-card">
+      <p class="eyebrow">Velkommen tilbage</p>
+      <h1 style="font-family:var(--display);font-size:2rem;margin:.3rem 0 1rem">Log ind</h1>
+      <form class="form" id="form">
+        <div class="field"><label>E-mail</label><input name="email" type="email" required placeholder="dig@mail.dk"></div>
+        <div class="field"><label>Kodeord</label><input name="password" type="password" required></div>
+        <button class="btn btn-primary" type="submit">Log ind</button>
+      </form>
+      <p style="margin-top:1rem;opacity:.75">Ingen konto? <a href="opret.html" style="text-decoration:underline">Opret profil</a></p>
+      <p style="margin-top:.6rem;font-size:.85rem;opacity:.55">
+        Udlejer: maja@demo.dk / demo123<br>
+        Lejer: niklas@demo.dk / demo123<br>
+        Admin: stefan@roomtogether.dk / admin123
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem">
+        <button type="button" class="btn btn-ghost btn-sm" id="demo-maja">Log ind som Maja</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="demo-niklas">Log ind som Niklas</button>
+      </div>
+    </div>
+  </main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('login.html')
+    function go(user) {
+      setSession(user.id)
+      location.href = qs('next') || homeFor(user)
+    }
+    document.getElementById('form').onsubmit = e => {
+      e.preventDefault()
+      const f = e.target
+      const data = db()
+      const user = data.users.find(u => u.email === f.email.value.trim().toLowerCase() && u.password === f.password.value)
+      if (!user) return toast('Forkert e-mail eller kode')
+      go(user)
+    }
+    document.getElementById('demo-maja').onclick = () => go(db().users.find(u => u.email === 'maja@demo.dk'))
+    document.getElementById('demo-niklas').onclick = () => go(db().users.find(u => u.email === 'niklas@demo.dk'))
+  </script>
+</body>
+</html>

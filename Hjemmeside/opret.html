@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Opret profil — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="auth-shell wrap">
+    <div class="panel auth-card" style="width:min(560px,100%)">
+      <p class="eyebrow">Gratis · én rolle pr. konto</p>
+      <h1 style="font-family:var(--display);font-size:2rem;margin:.3rem 0 1rem">Opret profil</h1>
+      <form class="form" id="form">
+        <div class="form-row">
+          <div class="field"><label>Navn</label><input name="name" required></div>
+          <div class="field"><label>Alder</label><input name="age" type="number" min="18" max="99" required></div>
+        </div>
+        <div class="field"><label>E-mail</label><input name="email" type="email" required></div>
+        <div class="field"><label>Kodeord</label><input name="password" type="password" minlength="6" required></div>
+        <div class="field"><label>Rolle (kan ikke være begge)</label>
+          <select name="role" required>
+            <option value="seeker">Jeg søger værelse</option>
+            <option value="host">Jeg har et ledigt værelse</option>
+          </select>
+        </div>
+        <div class="field"><label>Kort om dig</label><textarea name="bio" required placeholder="Hvem er du i hverdagen?"></textarea></div>
+        <div class="form-row">
+          <div class="field"><label>Beskæftigelse</label><input name="work" required placeholder="Studerende / arbejde"></div>
+          <div class="field"><label>Ønsket område</label><select name="area"></select></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Budget (kun søger)</label><input name="budget" type="number" placeholder="fx 5500"></div>
+          <div class="field"><label>Indflytningsdato</label><input name="moveIn" type="date" required></div>
+        </div>
+        <p style="font-weight:600;margin-top:.5rem">Dine hverdagsvaner</p>
+        <div class="habits" id="habits"></div>
+        <button class="btn btn-primary" type="submit">Opret konto</button>
+      </form>
+    </div>
+  </main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('opret.html')
+    const form = document.getElementById('form')
+    AREAS.forEach(a => form.area.innerHTML += `<option>${a}</option>`)
+    document.getElementById('habits').innerHTML = habitSelects('h_', null)
+    const roleQ = qs('role')
+    if (roleQ === 'host' || roleQ === 'seeker') form.role.value = roleQ
+
+    form.onsubmit = e => {
+      e.preventDefault()
+      const data = db()
+      const email = form.email.value.trim().toLowerCase()
+      if (data.users.some(u => u.email === email)) return toast('E-mail er allerede i brug')
+      const user = {
+        id: 'u' + Date.now(),
+        name: form.name.value.trim(),
+        email,
+        password: form.password.value,
+        role: form.role.value,
+        age: Number(form.age.value),
+        bio: form.bio.value.trim(),
+        work: form.work.value.trim(),
+        area: form.area.value,
+        budget: Number(form.budget.value || 0),
+        moveIn: form.moveIn.value,
+        habits: readHabits(form, 'h_')
+      }
+      data.users.push(user)
+      data.sessionUserId = user.id
+      save(data)
+      toast('Konto oprettet')
+      location.href = user.role === 'host' ? 'nyt-opslag.html' : homeFor(user)
+    }
+  </script>
+</body>
+</html>

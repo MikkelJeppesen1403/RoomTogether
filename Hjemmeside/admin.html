@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="wrap" style="padding:2rem 0 3rem" id="page"></main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('admin.html')
+    if (!requireLogin('admin.html')) throw 0
+    const me = sessionUser()
+    if (me.role !== 'admin' && me.email !== 'stefan@roomtogether.dk') {
+      document.getElementById('page').innerHTML = '<div class="empty">Kun administrator har adgang.</div>'
+    } else {
+      const data = db()
+      document.getElementById('page').innerHTML = `
+        <div class="page-head"><div><p class="eyebrow">Kun Stefan i starten</p><h1>Admin</h1></div>
+          <button class="btn btn-ghost btn-sm" id="reset">Nulstil demo-data</button>
+        </div>
+        <div class="panel" style="margin-bottom:1rem">
+          <h2 style="font-family:var(--display);font-size:1.3rem;margin-bottom:.8rem">Anmeldelser</h2>
+          <table class="table"><thead><tr><th>Type</th><th>Mål</th><th>Årsag</th><th></th></tr></thead>
+          <tbody id="reports"></tbody></table>
+        </div>
+        <div class="panel">
+          <h2 style="font-family:var(--display);font-size:1.3rem;margin-bottom:.8rem">Opslag</h2>
+          <table class="table"><thead><tr><th>Titel</th><th>Område</th><th>Pris</th><th></th></tr></thead>
+          <tbody id="listings"></tbody></table>
+        </div>`
+
+      const reportsEl = document.getElementById('reports')
+      reportsEl.innerHTML = data.reports.length
+        ? data.reports.map(r => `<tr>
+            <td>${r.type}</td><td>${r.targetId}</td><td>${r.reason}</td>
+            <td><button class="btn btn-danger btn-sm" data-del="${r.targetId}" data-rid="${r.id}">Fjern opslag</button></td>
+          </tr>`).join('')
+        : '<tr><td colspan="4">Ingen anmeldelser</td></tr>'
+
+      document.getElementById('listings').innerHTML = data.listings.map(l => `<tr>
+        <td><a href="vaerelse.html?id=${l.id}" style="text-decoration:underline">${l.title}</a></td>
+        <td>${l.area}</td><td>${money(l.rent)}</td>
+        <td><button class="btn btn-danger btn-sm" data-del="${l.id}">Slet</button></td>
+      </tr>`).join('') || '<tr><td colspan="4">Ingen opslag</td></tr>'
+
+      document.querySelectorAll('[data-del]').forEach(btn => {
+        btn.onclick = () => {
+          if (!confirm('Slet opslag?')) return
+          const d = db()
+          d.listings = d.listings.filter(l => l.id !== btn.dataset.del)
+          if (btn.dataset.rid) {
+            const r = d.reports.find(x => x.id === btn.dataset.rid)
+            if (r) r.status = 'resolved'
+          }
+          save(d)
+          location.reload()
+        }
+      })
+
+      document.getElementById('reset').onclick = () => {
+        if (!confirm('Nulstil al lokal data til demo?')) return
+        localStorage.removeItem(KEY)
+        location.href = 'index.html'
+      }
+    }
+  </script>
+</body>
+</html>

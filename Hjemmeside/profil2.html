@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ansøgerprofil — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="wrap" style="padding-bottom:3rem" id="page"></main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('profil.html')
+
+    const REVIEWS = {
+      u3: [
+        {
+          from: 'Sofie',
+          relation: 'Tidligere roommate · Aarhus',
+          period: 'aug 2024 – jun 2025',
+          rating: 5,
+          text: 'Niklas var en fantastisk roommate. Altid respektfuld omkring fællesarealer, betalte til tiden, og det var nemt at tale om små ting. Jeg vil klart anbefale ham.'
+        },
+        {
+          from: 'Jonas',
+          relation: 'Tidligere roommate · Aarhus',
+          period: 'jan 2023 – jul 2024',
+          rating: 5,
+          text: 'Rolig, pålidelig og god til at holde aftaler. Vi havde forskellige rytmer, men det fungerede fint, fordi han var ærlig om det fra start.'
+        },
+        {
+          from: 'Amira',
+          relation: 'Tidligere roommate · kollegium',
+          period: '2022 – 2023',
+          rating: 4,
+          text: 'Hyggelig at bo med. Meget ren og stille om aftenen. Kunne godt være lidt privat, men på en god måde — aldrig ubehagelig.'
+        }
+      ]
+    }
+
+    const id = qs('id') || 'u3'
+    const data = db()
+    const person = data.users.find(u => u.id === id)
+    const me = sessionUser()
+    const page = document.getElementById('page')
+
+    if (!person) {
+      page.innerHTML = '<div class="empty" style="margin-top:2rem">Profil findes ikke.</div>'
+    } else {
+      const reviews = REVIEWS[person.id] || []
+      const score = me && me.habits ? matchScore(me.habits, person.habits) : null
+      const stars = n => '★'.repeat(n) + '☆'.repeat(5 - n)
+      const avg = reviews.length
+        ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+        : null
+
+      page.innerHTML = `
+        <div class="page-head">
+          <div>
+            <a href="javascript:history.back()" style="opacity:.7">← Tilbage</a>
+            <p class="eyebrow" style="margin-top:.8rem">Ansøger · set af udlejer</p>
+            <h1>${person.name}</h1>
+          </div>
+          <button class="btn btn-primary" id="msg">Skriv til ${person.name}</button>
+        </div>
+
+        <div class="detail">
+          <div class="panel">
+            ${person.photo ? `<img class="avatar" src="${person.photo}" alt="${person.name}" style="margin-bottom:1rem">` : ''}
+            <div class="meta" style="margin-bottom:1rem">
+              <span>${person.age} år</span>
+              <span>${person.work}</span>
+              <span>Ønsker ${person.area}</span>
+              <span>Indflytning ${person.moveIn}</span>
+              ${person.budget ? `<span>Budget ${money(person.budget)}</span>` : ''}
+            </div>
+            <p style="opacity:.85;margin-bottom:1rem">${person.bio}</p>
+            ${score != null
+              ? `<p class="match-pill ${matchClass(score)}" style="margin-bottom:1rem">${matchLabel(score)} med dine vaner</p>`
+              : '<p style="opacity:.7;margin-bottom:1rem">Log ind for at se match med dig.</p>'}
+            <p style="font-weight:600;margin-bottom:.4rem">Hverdagsvaner</p>
+            <div class="habits">${HABIT_KEYS.map(([k, label]) => `<div class="habit"><b>${label}</b>${person.habits[k]}</div>`).join('')}</div>
+          </div>
+
+          <div class="panel">
+            <p class="eyebrow">Fra tidligere roommates</p>
+            <h2 style="font-family:var(--display);font-size:1.45rem;margin:.25rem 0 .4rem">Anbefalinger</h2>
+            ${avg
+              ? `<p style="margin-bottom:1rem"><span style="color:var(--blue);font-weight:700">${avg}</span> / 5 · ${reviews.length} kommentar${reviews.length === 1 ? '' : 'er'}</p>`
+              : '<p style="opacity:.7;margin-bottom:1rem">Ingen anbefalinger endnu.</p>'}
+            <div class="reviews">
+              ${reviews.map(r => `
+                <article class="review">
+                  <div class="review-top">
+                    <div>
+                      <strong>${r.from}</strong>
+                      <div class="review-meta">${r.relation}</div>
+                      <div class="review-meta">${r.period}</div>
+                    </div>
+                    <div class="review-stars" aria-label="${r.rating} ud af 5">${stars(r.rating)}</div>
+                  </div>
+                  <p>${r.text}</p>
+                </article>
+              `).join('') || '<div class="empty">Ingen kommentarer endnu.</div>'}
+            </div>
+            <p style="margin-top:1rem;font-size:.85rem;opacity:.6">Anbefalinger er frivillige og modererede i den rigtige version.</p>
+          </div>
+        </div>`
+
+      document.getElementById('msg').onclick = () => {
+        if (!requireLogin('profil2.html?id=' + person.id)) return
+        if (me && me.id === person.id) return toast('Det er dig selv')
+        location.href = 'beskeder.html?with=' + person.id
+      }
+    }
+  </script>
+</body>
+</html>

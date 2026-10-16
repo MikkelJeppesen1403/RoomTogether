@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nyt opslag — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="wrap" style="padding:2rem 0 3rem">
+    <div class="page-head"><div><p class="eyebrow">Går live med det samme</p><h1>Nyt værelsesopslag</h1></div></div>
+    <form class="form panel" id="form" style="max-width:640px">
+      <div class="field"><label>Titel</label><input name="title" required placeholder="fx Lyst værelse på Amager"></div>
+      <div class="field"><label>Beskrivelse</label><textarea name="desc" required></textarea></div>
+      <div class="form-row">
+        <div class="field"><label>Område</label><select name="area"></select></div>
+        <div class="field"><label>Størrelse (m²)</label><input name="size" type="number" required></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Husleje</label><input name="rent" type="number" required></div>
+        <div class="field"><label>Depositum</label><input name="deposit" type="number" required></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Indflytning</label><input name="moveIn" type="date" required></div>
+        <div class="field"><label>Lejeperiode</label><input name="period" required placeholder="fx 12 måneder"></div>
+      </div>
+      <div class="field"><label>Billede-URL (valgfri)</label><input name="image" placeholder="https://..."></div>
+      <p style="font-weight:600">Vaner hos nuværende beboere</p>
+      <div class="habits" id="habits"></div>
+      <button class="btn btn-primary" type="submit">Publicér opslag</button>
+    </form>
+  </main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('profil.html')
+    if (!requireLogin('nyt-opslag.html')) throw 0
+    const me = sessionUser()
+    if (!canList(me)) {
+      toast('Kun udlejere kan oprette opslag')
+      location.href = homeFor(me)
+      throw 0
+    }
+    const form = document.getElementById('form')
+    AREAS.forEach(a => form.area.innerHTML += `<option>${a}</option>`)
+    document.getElementById('habits').innerHTML = habitSelects('h_', me.habits)
+
+    form.onsubmit = e => {
+      e.preventDefault()
+      const d = db()
+      const listing = {
+        id: 'l' + Date.now(),
+        userId: me.id,
+        title: form.title.value.trim(),
+        desc: form.desc.value.trim(),
+        area: form.area.value,
+        size: Number(form.size.value),
+        rent: Number(form.rent.value),
+        deposit: Number(form.deposit.value),
+        moveIn: form.moveIn.value,
+        period: form.period.value.trim(),
+        image: form.image.value.trim(),
+        habits: readHabits(form, 'h_'),
+        createdAt: Date.now()
+      }
+      d.listings.push(listing)
+      save(d)
+      toast('Opslag er live')
+      location.href = 'vaerelse.html?id=' + listing.id
+    }
+  </script>
+</body>
+</html>

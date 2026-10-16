@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Beskeder — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="wrap">
+    <div class="page-head"><div><p class="eyebrow">Realtid i denne browser</p><h1>Beskeder</h1></div></div>
+    <div class="chat-layout">
+      <div class="thread-list" id="threads"></div>
+      <div class="panel chat-box">
+        <div id="chat-head" style="font-weight:600">Vælg en samtale</div>
+        <div class="chat-msgs" id="msgs"></div>
+        <form class="chat-input" id="send">
+          <input name="text" placeholder="Skriv en besked..." autocomplete="off" required>
+          <button class="btn btn-primary" type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+  </main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('beskeder.html')
+    if (!requireLogin('beskeder.html')) throw 0
+    const me = sessionUser()
+    let withId = qs('with')
+    const channel = new BroadcastChannel('roomtogether_chat')
+
+    function partners() {
+      const data = db()
+      const ids = new Set()
+      data.messages.forEach(m => {
+        if (m.fromId === me.id) ids.add(m.toId)
+        if (m.toId === me.id) ids.add(m.fromId)
+      })
+      if (withId) ids.add(withId)
+      return [...ids].map(id => data.users.find(u => u.id === id)).filter(Boolean)
+    }
+
+    function drawThreads() {
+      const list = partners()
+      document.getElementById('threads').innerHTML = list.length
+        ? list.map(u => `<button class="thread ${u.id === withId ? 'active' : ''}" data-id="${u.id}">${u.name}<div style="opacity:.6;font-size:.85rem">${u.role === 'host' ? 'Har værelse' : 'Søger'}</div></button>`).join('')
+        : `<div class="empty">${isHost(me) ? 'Ingen samtaler endnu. Ansøgere dukker op, når de skriver om dit opslag.' : 'Ingen samtaler endnu. Skriv fra et opslag.'}</div>`
+      document.querySelectorAll('.thread').forEach(btn => {
+        btn.onclick = () => {
+          withId = btn.dataset.id
+          history.replaceState({}, '', 'beskeder.html?with=' + withId)
+          drawThreads()
+          drawMsgs()
+        }
+      })
+    }
+
+    function drawMsgs() {
+      const box = document.getElementById('msgs')
+      const head = document.getElementById('chat-head')
+      if (!withId) {
+        head.textContent = 'Vælg en samtale'
+        box.innerHTML = ''
+        return
+      }
+      const other = db().users.find(u => u.id === withId)
+      head.innerHTML = other
+        ? `Chat med ${other.name}${other.role === 'seeker' ? ` · <a href="profil2.html?id=${other.id}" style="text-decoration:underline;color:var(--blue)">Se profil</a>` : ''}`
+        : 'Chat'
+      const msgs = db().messages
+        .filter(m => chatKey(m.fromId, m.toId) === chatKey(me.id, withId))
+        .sort((a, b) => a.at - b.at)
+      box.innerHTML = msgs.map(m => `<div class="bubble ${m.fromId === me.id ? 'me' : ''}">${m.text}</div>`).join('')
+      box.scrollTop = box.scrollHeight
+    }
+
+    document.getElementById('send').onsubmit = e => {
+      e.preventDefault()
+      if (!withId) return toast('Vælg en samtale først')
+      const text = e.target.text.value.trim()
+      if (!text) return
+      const d = db()
+      const msg = { id: 'm' + Date.now(), fromId: me.id, toId: withId, text, at: Date.now(), listingId: qs('listing') || null }
+      d.messages.push(msg)
+      save(d)
+      e.target.reset()
+      channel.postMessage({ type: 'msg', pair: chatKey(me.id, withId) })
+      drawThreads()
+      drawMsgs()
+    }
+
+    channel.onmessage = () => { drawThreads(); drawMsgs() }
+    window.addEventListener('storage', () => { drawThreads(); drawMsgs() })
+    setInterval(() => { if (withId) drawMsgs() }, 1000)
+
+    if (withId && withId === me.id) withId = null
+    drawThreads()
+    drawMsgs()
+  </script>
+</body>
+</html>

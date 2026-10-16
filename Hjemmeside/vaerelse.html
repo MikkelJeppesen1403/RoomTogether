@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Værelse — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="wrap" id="page" style="padding-bottom:3rem"></main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('vaerelser.html')
+    const id = qs('id')
+    const data = db()
+    const listing = data.listings.find(l => l.id === id)
+    const page = document.getElementById('page')
+    if (!listing) {
+      page.innerHTML = '<div class="empty" style="margin-top:2rem">Opslag findes ikke.</div>'
+    } else {
+      const host = data.users.find(u => u.id === listing.userId)
+      const me = sessionUser()
+      const score = isSeeker(me) ? matchScore(me.habits, listing.habits) : null
+      const fav = isSeeker(me) && data.favorites.some(f => f.userId === me.id && f.listingId === listing.id)
+      const own = me && me.id === listing.userId
+      const actions = []
+      if (!own) actions.push('<button class="btn btn-primary" id="msg">Skriv besked</button>')
+      if (isSeeker(me) || !me) actions.push(`<button class="btn btn-ghost" id="fav">${fav ? 'Fjern favorit' : 'Gem favorit'}</button>`)
+      if (own) actions.push('<a class="btn btn-ghost" href="ansogere.html">Se ansøgere</a>')
+      actions.push('<button class="btn btn-ghost" id="report">Anmeld</button>')
+
+      page.innerHTML = `
+        <div class="page-head"><a href="vaerelser.html" style="opacity:.7">← Tilbage</a></div>
+        <div class="detail">
+          <div>
+            <div class="detail-gallery">${listing.image ? `<img src="${listing.image}" alt="">` : ''}</div>
+            <div class="panel" style="margin-top:1rem">
+              <h2 style="font-family:var(--display);margin-bottom:.5rem">${listing.title}</h2>
+              <p style="opacity:.8;margin-bottom:1rem">${listing.desc}</p>
+              <div class="meta">
+                <span>${money(listing.rent)}/md</span>
+                <span>Depositum ${money(listing.deposit)}</span>
+                <span>${listing.size} m²</span>
+                <span>${listing.area}</span>
+                <span>Indflytning ${listing.moveIn}</span>
+                <span>${listing.period}</span>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <p class="eyebrow">Nuværende beboer</p>
+            ${host && host.photo ? `<img class="avatar" src="${host.photo}" alt="${host.name}" style="margin:.5rem 0 1rem">` : ''}
+            <h2 style="font-family:var(--display);font-size:1.6rem;margin:.3rem 0">${host ? host.name : 'Ukendt'}, ${host ? host.age : ''}</h2>
+            <p style="opacity:.8;margin-bottom:1rem">${host ? host.bio : ''}</p>
+            ${score != null
+              ? `<p class="match-pill ${matchClass(score)}" style="margin-bottom:1rem">${matchLabel(score)} på vaner</p>`
+              : isHost(me)
+                ? '<p style="opacity:.7;margin-bottom:1rem">Du er udlejer — match vises, når du åbner en ansøgers profil.</p>'
+                : '<p style="opacity:.7;margin-bottom:1rem">Log ind som lejer for at se match.</p>'}
+            <div class="habits">${HABIT_KEYS.map(([k,label]) => `<div class="habit"><b>${label}</b>${listing.habits[k]}</div>`).join('')}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.25rem">${actions.join('')}</div>
+          </div>
+        </div>`
+
+      const msgBtn = document.getElementById('msg')
+      if (msgBtn) msgBtn.onclick = () => {
+        if (!requireLogin('vaerelse.html?id=' + id)) return
+        if (isHost(sessionUser()) && !isSeeker(sessionUser())) {
+          toast('Som udlejer svarer du via Ansøgere / Beskeder')
+          location.href = 'ansogere.html'
+          return
+        }
+        location.href = 'beskeder.html?with=' + listing.userId + '&listing=' + listing.id
+      }
+      const favBtn = document.getElementById('fav')
+      if (favBtn) favBtn.onclick = () => {
+        if (!requireLogin('vaerelse.html?id=' + id)) return
+        const u = sessionUser()
+        if (!isSeeker(u)) return toast('Kun lejere kan gemme værelser')
+        const d = db()
+        const i = d.favorites.findIndex(f => f.userId === u.id && f.listingId === listing.id)
+        if (i >= 0) d.favorites.splice(i, 1)
+        else d.favorites.push({ userId: u.id, listingId: listing.id })
+        save(d)
+        location.reload()
+      }
+      document.getElementById('report').onclick = () => {
+        if (!requireLogin('vaerelse.html?id=' + id)) return
+        const reason = prompt('Hvorfor anmelder du dette opslag?')
+        if (!reason) return
+        const d = db()
+        d.reports.push({ id: 'r' + Date.now(), type: 'listing', targetId: listing.id, fromUserId: sessionUser().id, reason, createdAt: Date.now(), status: 'open' })
+        save(d)
+        toast('Tak — anmeldelsen er sendt')
+      }
+    }
+  </script>
+</body>
+</html>

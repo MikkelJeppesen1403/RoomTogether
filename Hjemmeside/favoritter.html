@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Favoritter — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="wrap" style="padding-bottom:3rem">
+    <div class="page-head"><div><p class="eyebrow">Gemte værelser</p><h1>Favoritter</h1></div></div>
+    <div class="grid" id="list"></div>
+  </main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('favoritter.html')
+    if (!requireLogin('favoritter.html')) throw 0
+    const me = sessionUser()
+    if (!isSeeker(me)) {
+      toast('Favoritter er til dig der søger værelse')
+      location.href = homeFor(me)
+      throw 0
+    }
+    const data = db()
+    const ids = data.favorites.filter(f => f.userId === me.id).map(f => f.listingId)
+    const items = data.listings.filter(l => ids.includes(l.id))
+    document.getElementById('list').innerHTML = items.length
+      ? items.map(l => listingCard(l, matchScore(me.habits, l.habits))).join('')
+      : '<div class="empty">Ingen favoritter endnu. Gem et værelse fra et opslag.</div>'
+  </script>
+</body>
+</html>

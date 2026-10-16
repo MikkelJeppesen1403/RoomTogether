@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RoomTogether — Find roommate i København</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="hero">
+    <img class="hero-img" src="Billeder/pexels-nathanjhilton-38354154.jpg" alt="København">
+    <div class="wrap hero-copy">
+      <p class="eyebrow">København · mennesker før boliger</p>
+      <h1>RoomTogether</h1>
+      <p>Find en roommate, der matcher din hverdag — ikke kun din husleje. Gratis at kigge. Ærlig pris. Ingen skjulte abonnementer.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="vaerelser.html">Jeg søger værelse</a>
+        <a class="btn btn-ghost" href="opret.html?role=host">Jeg har et ledigt værelse</a>
+      </div>
+    </div>
+  </main>
+  <section class="mood">
+    <div class="mood-track">
+      <img src="Billeder/pexels-cottonbro-4778612.jpg" alt="">
+      <img src="Billeder/pexels-cottonbro-5088439.jpg" alt="">
+      <img src="Billeder/pexels-cottonbro-5097360.jpg" alt="">
+      <img src="Billeder/pexels-vafphotos-14424558.jpg" alt="">
+      <img src="Billeder/pexels-cottonbro-5932729.jpg" alt="">
+    </div>
+  </section>
+  <section class="section">
+    <div class="wrap">
+      <h2>Sådan virker det</h2>
+      <p class="lead">Samme flow som du kender fra boligsøgning — men med vaner og tryg chat først.</p>
+      <div class="steps">
+        <div class="step"><span>01</span><strong>Opret profil</strong><p>Vælg én rolle: søger værelse eller har værelse. Fortæl om dine vaner.</p></div>
+        <div class="step"><span>02</span><strong>Se match</strong><p>Filtrér på område, pris og vaner. Se hvor godt I passer sammen.</p></div>
+        <div class="step"><span>03</span><strong>Skriv i chatten</strong><p>Snak direkte på RoomTogether — uden at dele nummer fra start.</p></div>
+      </div>
+    </div>
+  </section>
+  <section class="section">
+    <div class="wrap">
+      <h2>Ledige lige nu</h2>
+      <p class="lead">Kig gratis — ingen konto krævet for at se opslag.</p>
+      <div class="grid" id="home-listings"></div>
+      <p style="margin-top:1.25rem"><a class="btn btn-ghost" href="vaerelser.html">Se alle værelser</a></p>
+    </div>
+  </section>
+  <footer class="footer"><div class="wrap">RoomTogether · demo: maja@demo.dk (udlejer) · niklas@demo.dk (lejer) · kode: demo123</div></footer>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('index.html')
+    const me = sessionUser()
+    const data = db()
+    document.getElementById('home-listings').innerHTML = data.listings.slice(0, 3).map(l => {
+      const score = isSeeker(me) ? matchScore(me.habits, l.habits) : null
+      return listingCard(l, score)
+    }).join('')
+  </script>
+</body>
+</html>

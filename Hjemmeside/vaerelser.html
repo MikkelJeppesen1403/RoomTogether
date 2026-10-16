@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Værelser — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="wrap">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">København</p>
+        <h1>Ledige værelser</h1>
+      </div>
+      <span id="host-cta"></span>
+    </div>
+    <form class="filters" id="filters">
+      <div class="field"><label>Område</label>
+        <select name="area"><option value="">Alle</option></select>
+      </div>
+      <div class="field"><label>Max husleje</label><input name="max" type="number" placeholder="fx 6000"></div>
+      <div class="field"><label>Indflytning fra</label><input name="moveIn" type="date"></div>
+      <div class="field"><label>Rygning</label>
+        <select name="smoke"><option value="">Alle</option></select>
+      </div>
+      <div class="field" style="grid-column:1/-1"><button class="btn btn-primary btn-sm" type="submit">Filtrér</button></div>
+    </form>
+    <div class="grid" id="list"></div>
+  </main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('vaerelser.html')
+    const me0 = sessionUser()
+    document.getElementById('host-cta').innerHTML = canList(me0)
+      ? '<a class="btn btn-primary" href="nyt-opslag.html">Nyt opslag</a>'
+      : isSeeker(me0) ? '' : '<a class="btn btn-primary" href="opret.html?role=host">Opret opslag</a>'
+    const areaSel = document.querySelector('[name=area]')
+    AREAS.forEach(a => areaSel.innerHTML += `<option>${a}</option>`)
+    HABIT_OPTS.smoke.forEach(s => document.querySelector('[name=smoke]').innerHTML += `<option>${s}</option>`)
+
+    function draw() {
+      const f = document.getElementById('filters')
+      const me = sessionUser()
+      const data = db()
+      let items = [...data.listings].sort((a,b) => b.createdAt - a.createdAt)
+      if (f.area.value) items = items.filter(l => l.area === f.area.value)
+      if (f.max.value) items = items.filter(l => l.rent <= Number(f.max.value))
+      if (f.moveIn.value) items = items.filter(l => l.moveIn >= f.moveIn.value)
+      if (f.smoke.value) items = items.filter(l => l.habits.smoke === f.smoke.value)
+      document.getElementById('list').innerHTML = items.length
+        ? items.map(l => {
+            const score = isSeeker(me) ? matchScore(me.habits, l.habits) : null
+            return listingCard(l, score)
+          }).join('')
+        : '<div class="empty">Ingen værelser matcher filtrene.</div>'
+    }
+    document.getElementById('filters').onsubmit = e => { e.preventDefault(); draw() }
+    draw()
+  </script>
+</body>
+</html>

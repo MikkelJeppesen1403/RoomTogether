@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Profil — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="wrap" style="padding:2rem 0 3rem" id="page"></main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('profil.html')
+    if (!requireLogin('profil.html')) throw 0
+    const me = sessionUser()
+    const data = db()
+    const myListings = data.listings.filter(l => l.userId === me.id)
+    const roleLabel = me.role === 'admin' ? 'Admin' : isHost(me) ? 'Har værelse · udlejer' : 'Søger værelse · lejer'
+
+    document.getElementById('page').innerHTML = `
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">${roleLabel}</p>
+          <h1>${me.name}</h1>
+        </div>
+        ${canList(me) ? '<a class="btn btn-primary" href="nyt-opslag.html">Nyt opslag</a>' : '<a class="btn btn-primary" href="vaerelser.html">Find værelse</a>'}
+      </div>
+      <div class="detail">
+        <div class="panel">
+          ${me.photo ? `<img class="avatar" src="${me.photo}" alt="${me.name}" style="margin-bottom:1rem">` : ''}
+          <p style="opacity:.8;margin-bottom:1rem">${me.bio}</p>
+          <div class="meta">
+            <span>${me.age} år</span>
+            <span>${me.work}</span>
+            <span>${me.area}</span>
+            <span>Indflytning ${me.moveIn}</span>
+            ${isSeeker(me) ? `<span>Budget ${money(me.budget)}</span>` : ''}
+          </div>
+          <div class="habits" style="margin-top:1rem">${HABIT_KEYS.map(([k,l]) => `<div class="habit"><b>${l}</b>${me.habits[k]}</div>`).join('')}</div>
+          ${isSeeker(me) ? '<p style="margin-top:1rem"><a class="btn btn-ghost btn-sm" href="profil2.html?id=' + me.id + '">Se din offentlige profil</a></p>' : ''}
+        </div>
+        <div class="panel">
+          <h2 style="font-family:var(--display);font-size:1.4rem;margin-bottom:.8rem">${isSeeker(me) ? 'Din søgning' : 'Dine opslag'}</h2>
+          ${isSeeker(me)
+            ? `<p style="opacity:.75">Match vises på værelser ud fra dine vaner. Gem favoritter og skriv til udlejere.</p>
+               <p style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:.5rem">
+                 <a class="btn btn-ghost btn-sm" href="vaerelser.html">Ledige værelser</a>
+                 <a class="btn btn-ghost btn-sm" href="favoritter.html">Favoritter</a>
+               </p>`
+            : (myListings.length
+                ? myListings.map(l => `<div style="margin-bottom:.8rem"><a href="vaerelse.html?id=${l.id}" style="text-decoration:underline">${l.title}</a> · ${money(l.rent)}</div>`).join('') +
+                  '<p style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:.5rem"><a class="btn btn-ghost btn-sm" href="nyt-opslag.html">Opret flere</a><a class="btn btn-ghost btn-sm" href="ansogere.html">Se ansøgere</a></p>'
+                : '<p style="opacity:.75">Du har ingen opslag endnu.</p><a class="btn btn-primary btn-sm" href="nyt-opslag.html">Opret opslag</a>')}
+          <hr style="border:0;border-top:1px solid rgba(96,63,38,.12);margin:1.25rem 0">
+          <button class="btn btn-danger btn-sm" id="del">Slet min profil</button>
+        </div>
+      </div>`
+
+    document.getElementById('del').onclick = () => {
+      if (!confirm('Slet profil, opslag, favoritter og beskeder?')) return
+      let d = db()
+      d.listings = d.listings.filter(l => l.userId !== me.id)
+      d.favorites = d.favorites.filter(f => f.userId !== me.id)
+      d.messages = d.messages.filter(m => m.fromId !== me.id && m.toId !== me.id)
+      d.users = d.users.filter(u => u.id !== me.id)
+      d.sessionUserId = null
+      save(d)
+      location.href = 'index.html'
+    }
+  </script>
+</body>
+</html>

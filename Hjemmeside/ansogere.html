@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ansøgere — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="wrap" style="padding-bottom:3rem">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">Udlejer</p>
+        <h1>Ansøgere</h1>
+      </div>
+    </div>
+    <div id="list"></div>
+  </main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('ansogere.html')
+    if (!requireLogin('ansogere.html')) throw 0
+    const me = sessionUser()
+    if (!canList(me)) {
+      toast('Kun for dig der har et værelse')
+      location.href = homeFor(me)
+      throw 0
+    }
+    const data = db()
+    const myListingIds = data.listings.filter(l => l.userId === me.id).map(l => l.id)
+    const ids = new Set()
+    data.messages.forEach(m => {
+      if (m.toId === me.id) ids.add(m.fromId)
+      if (m.fromId === me.id) ids.add(m.toId)
+      if (m.listingId && myListingIds.includes(m.listingId)) {
+        if (m.fromId !== me.id) ids.add(m.fromId)
+        if (m.toId !== me.id) ids.add(m.toId)
+      }
+    })
+    const seekers = [...ids]
+      .map(id => data.users.find(u => u.id === id))
+      .filter(u => u && u.id !== me.id && u.role === 'seeker')
+
+    document.getElementById('list').innerHTML = seekers.length
+      ? `<div class="grid">${seekers.map(u => {
+          const score = matchScore(me.habits, u.habits)
+          const last = data.messages
+            .filter(m => chatKey(m.fromId, m.toId) === chatKey(me.id, u.id))
+            .sort((a, b) => b.at - a.at)[0]
+          return `<div class="listing">
+            ${u.photo ? `<div class="listing-media"><img src="${u.photo}" alt=""><span class="badge">${u.area}</span></div>` : ''}
+            <div>
+              <h3>${u.name}, ${u.age}</h3>
+              <div class="meta"><span>${u.work}</span><span>Budget ${money(u.budget)}</span><span>${u.moveIn}</span></div>
+              <div class="meta" style="margin-top:.45rem">
+                <span class="match-pill ${matchClass(score)}">${matchLabel(score)}</span>
+              </div>
+              <p style="opacity:.75;margin:.7rem 0;font-size:.92rem">${last ? last.text : u.bio}</p>
+              <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+                <a class="btn btn-primary btn-sm" href="profil2.html?id=${u.id}">Se profil</a>
+                <a class="btn btn-ghost btn-sm" href="beskeder.html?with=${u.id}">Besked</a>
+              </div>
+            </div>
+          </div>`
+        }).join('')}</div>`
+      : '<div class="empty">Ingen ansøgere endnu. Når nogen skriver om dit opslag, dukker de op her.</div>'
+  </script>
+</body>
+</html>
