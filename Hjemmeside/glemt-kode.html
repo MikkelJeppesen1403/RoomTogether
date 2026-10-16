@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glemt kodeord — RoomTogether</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="site-nav"></div>
+  <main class="auth-shell wrap">
+    <div class="panel auth-card">
+      <p class="eyebrow">Nulstil kodeord</p>
+      <h1 style="font-family:var(--display);font-size:2rem;margin:.3rem 0 1rem">Glemt kodeord</h1>
+      <p style="margin-bottom:1rem;opacity:.75">Indtast din e-mail og vælg et nyt kodeord.</p>
+      <form class="form" id="form">
+        <div class="field"><label>E-mail</label><input name="email" type="email" required placeholder="dig@mail.dk"></div>
+        <div class="field"><label>Nyt kodeord</label><input name="password" type="password" minlength="6" required></div>
+        <div class="field"><label>Gentag kodeord</label><input name="password2" type="password" minlength="6" required></div>
+        <button class="btn btn-primary" type="submit">Gem nyt kodeord</button>
+      </form>
+      <p style="margin-top:1rem;opacity:.75"><a href="login.html" style="text-decoration:underline">Tilbage til log ind</a></p>
+    </div>
+  </main>
+  <script src="js/app.js"></script>
+  <script>
+    renderNav('login.html')
+    document.getElementById('form').onsubmit = e => {
+      e.preventDefault()
+      const f = e.target
+      if (f.password.value !== f.password2.value) return toast('Kodeordene er ikke ens')
+      const data = db()
+      const user = data.users.find(u => u.email === f.email.value.trim().toLowerCase())
+      if (!user) return toast('Ingen konto med den e-mail')
+      user.password = f.password.value
+      save(data)
+      toast('Kodeord opdateret — log ind')
+      location.href = 'login.html'
+    }
+  </script>
+</body>
+</html>

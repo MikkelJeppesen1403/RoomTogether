@@ -59,14 +59,14 @@ button, input, select, textarea {
 }
 
 .brand {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.35rem;
-  letter-spacing: -0.02em;
-  color: var(--ink);
+  display: flex;
+  align-items: center;
 }
 
-.brand span { color: var(--blue); opacity: 0.9; }
+.brand img {
+  height: 42px;
+  width: auto;
+}
 
 .nav-links {
   display: flex;
@@ -185,13 +185,9 @@ button, input, select, textarea {
   box-shadow: var(--shadow);
 }
 
-.hero h1 {
-  font-family: var(--display);
-  font-size: clamp(2.8rem, 9vw, 5.2rem);
-  line-height: 0.95;
-  letter-spacing: -0.04em;
+.hero-logo {
+  width: min(420px, 92%);
   margin: 0.4rem 0 1rem;
-  color: var(--ink);
 }
 
 .hero p {

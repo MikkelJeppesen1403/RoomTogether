@@ -1,4 +1,4 @@
-const KEY = 'roomtogether_v3'
+const KEY = 'roomtogether_v4'
 
 const IMG = {
   hero: 'Billeder/pexels-nathanjhilton-38354154.jpg',
@@ -21,13 +21,63 @@ const HABIT_KEYS = [
 ]
 
 const HABIT_OPTS = {
-  sleep: ['Tidlig', 'Normal', 'Natteugle'],
-  clean: ['Meget ren', 'Normal', 'Afslappet'],
-  guests: ['Sjældent', 'Af og til', 'Ofte'],
-  noise: ['Stille', 'Normal', 'Livligt'],
+  sleep: [
+    'Tidlig',
+    'Tidlig i hverdagen, senere i weekenden',
+    'Normal',
+    'Fleksibel / tilpasser mig',
+    'Skiftende rytme',
+    'Natteugle'
+  ],
+  clean: [
+    'Meget ren',
+    'Ren i fællesrum, afslappet på eget værelse',
+    'Rengøringsplan / faste dage',
+    'Normal',
+    'Ok med lidt rod midt på ugen',
+    'Afslappet'
+  ],
+  guests: [
+    'Sjældent',
+    'Ingen overnatning',
+    'Kun i dagtimerne',
+    'Af og til',
+    'Max én overnattende ad gangen',
+    'Ok med kæreste der sover over ofte',
+    'Gerne fælles middagsgæster',
+    'Ofte'
+  ],
+  noise: [
+    'Stille',
+    'Stille efter kl. 22',
+    'Arbejder hjemme (brug for ro)',
+    'Musik med headset',
+    'Normal',
+    'Ok med TV/musik i dagtimerne',
+    'Øver instrument',
+    'Livligt'
+  ],
   smoke: ['Nej', 'Udendørs', 'Ja'],
-  pets: ['Nej', 'Ok med andres', 'Har selv'],
-  social: ['Privat', 'Blandet', 'Meget social']
+  pets: [
+    'Nej',
+    'Allergisk (kat/hund)',
+    'Kun små dyr',
+    'Ok med kat, ikke hund',
+    'Ok med hund, ikke kat',
+    'Ok med andres',
+    'Har selv',
+    'Har selv + ok med andres'
+  ],
+  social: [
+    'Privat',
+    'Introvert men venlig',
+    'Helst stille hjem, byliv ude',
+    'Hver sin hverdag, social i weekenden',
+    'Blandet',
+    'Gerne fælles aftensmad',
+    'Madklub / fælles aktiviteter',
+    'Meget social'
+  ]
 }
 
 const AREAS = [
@@ -191,7 +241,7 @@ function renderNav(active) {
   }
   document.getElementById('site-nav').innerHTML = `
     <header class="site-header"><div class="wrap nav">
-      <a class="brand" href="index.html">RoomTogether <span>· København</span></a>
+      <a class="brand" href="index.html"><img src="Logo/roomtogether-logo.png" alt="RoomTogether"></a>
       <nav class="nav-links">${right}</nav>
     </div></header>`
 }
