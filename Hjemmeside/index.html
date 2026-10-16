@@ -8,55 +8,180 @@
 </head>
 <body>
   <div id="site-nav"></div>
-  <main class="hero">
-    <img class="hero-img" src="Billeder/pexels-nathanjhilton-38354154.jpg" alt="København">
-    <div class="wrap hero-copy">
-      <img class="hero-logo" src="Logo/roomtogether-logo.png" alt="RoomTogether">
-      <p>Find en roommate, der matcher din hverdag — ikke kun din husleje. Gratis at kigge. Ærlig pris. Ingen skjulte abonnementer.</p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="vaerelser.html">Jeg søger værelse</a>
-        <a class="btn btn-ghost" href="opret.html?role=host">Jeg har et ledigt værelse</a>
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Roommates i København</p>
+          <h1>Find et værelse — og nogen at dele hverdagen med</h1>
+          <p class="hero-sub">Vi matcher dig på vaner, ikke kun husleje. Gratis at kigge. Ærlig pris. Ingen skjulte abonnementer.</p>
+          <form class="quick-search" action="vaerelser.html">
+            <div class="field">
+              <label for="qs-area">Område</label>
+              <select id="qs-area" name="area"><option value="">Hele København</option></select>
+            </div>
+            <div class="field">
+              <label for="qs-max">Max husleje</label>
+              <input id="qs-max" name="max" type="number" inputmode="numeric" placeholder="fx 6000">
+            </div>
+            <button class="btn btn-primary" type="submit">Søg værelser</button>
+          </form>
+          <div class="hero-actions">
+            <a class="btn btn-ghost" href="opret.html?role=host">Jeg har et ledigt værelse →</a>
+          </div>
+          <p class="proof" id="proof"></p>
+        </div>
+        <div class="collage" aria-hidden="true">
+          <img src="Billeder/pexels-cottonbro-4778612.jpg" alt="">
+          <img src="Billeder/pexels-cottonbro-5088439.jpg" alt="">
+          <img src="Billeder/pexels-vafphotos-14424558.jpg" alt="">
+          <img src="Billeder/pexels-cottonbro-5932729.jpg" alt="">
+        </div>
       </div>
-    </div>
+    </section>
+
+    <section class="section" id="boliger">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <h2>Ledige lige nu</h2>
+            <p class="lead">Kig gratis — du behøver ikke en konto for at se opslag.</p>
+          </div>
+          <div class="carousel-nav">
+            <button class="round-btn" data-dir="-1" aria-label="Forrige">←</button>
+            <button class="round-btn" data-dir="1" aria-label="Næste">→</button>
+          </div>
+        </div>
+        <div class="carousel" id="home-listings"></div>
+        <p style="margin-top:1.25rem"><a class="text-link" href="vaerelser.html">Se alle værelser →</a></p>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="hvordan">
+      <div class="wrap">
+        <h2>Sådan virker det</h2>
+        <p class="lead">Samme flow som du kender fra boligsøgning — men med vaner og tryg chat først.</p>
+        <div class="steps">
+          <div class="step"><span>01</span><strong>Opret profil</strong><p>Vælg én rolle: søger værelse eller har værelse. Fortæl om dine vaner.</p></div>
+          <div class="step"><span>02</span><strong>Se dit match</strong><p>Filtrér på område, pris og indflytning. Se hvor godt I passer sammen.</p></div>
+          <div class="step"><span>03</span><strong>Skriv i chatten</strong><p>Snak direkte på RoomTogether — uden at dele nummer fra start.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <h2>Priser efter område</h2>
+        <p class="lead">Hvad koster et værelse? Her er de billigste ledige lige nu.</p>
+        <div class="price-strip" id="price-strip"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap split">
+        <div>
+          <p class="eyebrow">For dig der søger</p>
+          <h2>Flyt ind hos nogen, du faktisk passer med</h2>
+          <p class="lead">At finde værelse handler ikke kun om kvadratmeter. Vi viser, hvor godt jeres hverdag passer sammen, før I skriver.</p>
+          <ul class="checklist">
+            <li>Match-procent på søvn, rengøring, gæster og støj</li>
+            <li>Filtrér på område, pris, størrelse og indflytning</li>
+            <li>Gem favoritter og skriv sikkert i chatten</li>
+          </ul>
+          <a class="btn btn-primary" href="opret.html?role=seeker">Opret søgeprofil</a>
+        </div>
+        <div class="mock panel">
+          <p class="eyebrow">Dit match</p>
+          <h3>Lyst værelse på Nørrebro</h3>
+          <div class="mock-bars">
+            <div><span>Søvnrytme</span><i style="--w:90%"></i></div>
+            <div><span>Rengøring</span><i style="--w:100%"></i></div>
+            <div><span>Gæster</span><i style="--w:60%"></i></div>
+            <div><span>Støj</span><i style="--w:85%"></i></div>
+          </div>
+          <span class="match-pill">86% match</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="udlejere">
+      <div class="wrap split split-rev">
+        <div class="mock panel">
+          <div class="mock-top">
+            <p class="eyebrow">Dit opslag</p>
+            <span class="badge badge-now">3 nye ansøgere</span>
+          </div>
+          <h3>Værelse på Vesterbro</h3>
+          <p class="meta"><span>6.100 kr/md</span><span>10 m²</span></p>
+          <div class="avatars">
+            <img src="Billeder/pexels-duawalidd-29910002.jpg" alt="">
+            <img src="Billeder/pexels-cottonbro-5097360.jpg" alt="">
+            <img src="Billeder/pexels-cottonbro-4778612.jpg" alt="">
+            <span>Sorteret efter match</span>
+          </div>
+        </div>
+        <div>
+          <p class="eyebrow">For dig der har et værelse</p>
+          <h2>Find den rigtige roommate — hurtigt</h2>
+          <p class="lead">Opret et opslag på få minutter. Du ser ansøgerne sorteret efter, hvor godt de matcher jeres hverdag.</p>
+          <ul class="checklist">
+            <li>Gratis at oprette opslag</li>
+            <li>Ansøgere med profil, vaner og match</li>
+            <li>Al kontakt samlet i beskeder</li>
+          </ul>
+          <a class="btn btn-primary" href="opret.html?role=host">Opret opslag</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="cta-band">
+          <h2>Klar til at finde din næste roommate?</h2>
+          <p>Det er gratis at oprette en profil og kigge på værelser.</p>
+          <div class="hero-actions">
+            <a class="btn btn-light" href="opret.html">Opret profil</a>
+            <a class="btn btn-outline-light" href="vaerelser.html">Se værelser</a>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
-  <section class="mood">
-    <div class="mood-track">
-      <img src="Billeder/pexels-cottonbro-4778612.jpg" alt="">
-      <img src="Billeder/pexels-cottonbro-5088439.jpg" alt="">
-      <img src="Billeder/pexels-cottonbro-5097360.jpg" alt="">
-      <img src="Billeder/pexels-vafphotos-14424558.jpg" alt="">
-      <img src="Billeder/pexels-cottonbro-5932729.jpg" alt="">
-    </div>
-  </section>
-  <section class="section">
-    <div class="wrap">
-      <h2>Sådan virker det</h2>
-      <p class="lead">Samme flow som du kender fra boligsøgning — men med vaner og tryg chat først.</p>
-      <div class="steps">
-        <div class="step"><span>01</span><strong>Opret profil</strong><p>Vælg én rolle: søger værelse eller har værelse. Fortæl om dine vaner.</p></div>
-        <div class="step"><span>02</span><strong>Se match</strong><p>Filtrér på område, pris og vaner. Se hvor godt I passer sammen.</p></div>
-        <div class="step"><span>03</span><strong>Skriv i chatten</strong><p>Snak direkte på RoomTogether — uden at dele nummer fra start.</p></div>
-      </div>
-    </div>
-  </section>
-  <section class="section">
-    <div class="wrap">
-      <h2>Ledige lige nu</h2>
-      <p class="lead">Kig gratis — ingen konto krævet for at se opslag.</p>
-      <div class="grid" id="home-listings"></div>
-      <p style="margin-top:1.25rem"><a class="btn btn-ghost" href="vaerelser.html">Se alle værelser</a></p>
-    </div>
-  </section>
-  <footer class="footer"><div class="wrap">RoomTogether · demo: maja@demo.dk (udlejer) · niklas@demo.dk (lejer) · kode: demo123</div></footer>
   <script src="js/app.js"></script>
   <script>
     renderNav('index.html')
     const me = sessionUser()
     const data = db()
-    document.getElementById('home-listings').innerHTML = data.listings.slice(0, 3).map(l => {
+
+    const areaSel = document.getElementById('qs-area')
+    AREAS.forEach(a => areaSel.innerHTML += `<option>${a}</option>`)
+
+    const seekers = data.users.filter(u => u.role === 'seeker').length
+    document.getElementById('proof').textContent =
+      `${data.listings.length} ledige værelser · ${seekers} aktive søgere · ${AREAS.length} bydele`
+
+    const newest = [...data.listings].sort((a, b) => b.createdAt - a.createdAt)
+    const track = document.getElementById('home-listings')
+    track.innerHTML = newest.slice(0, 8).map(l => {
       const score = isSeeker(me) ? matchScore(me.habits, l.habits) : null
       return listingCard(l, score)
     }).join('')
+    document.querySelectorAll('.carousel-nav .round-btn').forEach(b => {
+      b.onclick = () => track.scrollBy({ left: Number(b.dataset.dir) * track.clientWidth * 0.8, behavior: 'smooth' })
+    })
+
+    const cheapest = {}
+    data.listings.forEach(l => {
+      if (!cheapest[l.area] || l.rent < cheapest[l.area].rent) cheapest[l.area] = l
+    })
+    document.getElementById('price-strip').innerHTML = Object.values(cheapest)
+      .sort((a, b) => a.rent - b.rent)
+      .slice(0, 4)
+      .map(l => `<a class="price-tile" href="vaerelser.html?area=${encodeURIComponent(l.area)}">
+        <span>${l.area}</span>
+        <strong>fra ${money(l.rent)}</strong>
+        <small>${l.size} m² · ${availability(l).label}</small>
+      </a>`).join('')
   </script>
 </body>
 </html>

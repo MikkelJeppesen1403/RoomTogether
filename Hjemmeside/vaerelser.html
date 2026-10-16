@@ -8,7 +8,7 @@
 </head>
 <body>
   <div id="site-nav"></div>
-  <main class="wrap">
+  <main class="wrap" style="padding-bottom:3rem">
     <div class="page-head">
       <div>
         <p class="eyebrow">København</p>
@@ -17,16 +17,30 @@
       <span id="host-cta"></span>
     </div>
     <form class="filters" id="filters">
-      <div class="field"><label>Område</label>
-        <select name="area"><option value="">Alle</option></select>
+      <div class="field"><label for="f-area">Område</label>
+        <select id="f-area" name="area"><option value="">Alle områder</option></select>
       </div>
-      <div class="field"><label>Max husleje</label><input name="max" type="number" placeholder="fx 6000"></div>
-      <div class="field"><label>Indflytning fra</label><input name="moveIn" type="date"></div>
-      <div class="field"><label>Rygning</label>
-        <select name="smoke"><option value="">Alle</option></select>
+      <div class="field"><label for="f-max">Max husleje</label><input id="f-max" name="max" type="number" inputmode="numeric" placeholder="fx 6000"></div>
+      <div class="field"><label for="f-size">Min. størrelse (m²)</label><input id="f-size" name="size" type="number" inputmode="numeric" placeholder="fx 10"></div>
+      <div class="field"><label for="f-move">Indflytning senest</label><input id="f-move" name="moveIn" type="date"></div>
+      <div class="field"><label for="f-smoke">Rygning</label>
+        <select id="f-smoke" name="smoke"><option value="">Alle</option></select>
       </div>
-      <div class="field" style="grid-column:1/-1"><button class="btn btn-primary btn-sm" type="submit">Filtrér</button></div>
     </form>
+    <div class="results-bar">
+      <p id="count" aria-live="polite"></p>
+      <div class="results-tools">
+        <button type="button" class="text-link" id="clear" hidden>Nulstil filtre</button>
+        <label for="sort" class="sr-only">Sortér</label>
+        <select id="sort" class="sort-select">
+          <option value="new">Nyeste først</option>
+          <option value="price">Laveste pris</option>
+          <option value="price-desc">Højeste pris</option>
+          <option value="size">Største værelse</option>
+          <option value="move">Tidligst indflytning</option>
+        </select>
+      </div>
+    </div>
     <div class="grid" id="list"></div>
   </main>
   <script src="js/app.js"></script>
@@ -35,28 +49,57 @@
     const me0 = sessionUser()
     document.getElementById('host-cta').innerHTML = canList(me0)
       ? '<a class="btn btn-primary" href="nyt-opslag.html">Nyt opslag</a>'
-      : isSeeker(me0) ? '' : '<a class="btn btn-primary" href="opret.html?role=host">Opret opslag</a>'
-    const areaSel = document.querySelector('[name=area]')
-    AREAS.forEach(a => areaSel.innerHTML += `<option>${a}</option>`)
-    HABIT_OPTS.smoke.forEach(s => document.querySelector('[name=smoke]').innerHTML += `<option>${s}</option>`)
+      : isSeeker(me0) ? '' : '<a class="btn btn-ghost" href="opret.html?role=host">Har du et værelse? Opret opslag</a>'
+    const f = document.getElementById('filters')
+    const sortSel = document.getElementById('sort')
+    AREAS.forEach(a => f.area.innerHTML += `<option>${a}</option>`)
+    HABIT_OPTS.smoke.forEach(s => f.smoke.innerHTML += `<option>${s}</option>`)
+    if (isSeeker(me0)) sortSel.insertAdjacentHTML('afterbegin', '<option value="match">Bedste match</option>')
+
+    // Udfyld filtre fra URL, så links fra forsiden og delte søgninger virker
+    const FIELDS = ['area', 'max', 'size', 'moveIn', 'smoke']
+    const params = new URLSearchParams(location.search)
+    FIELDS.forEach(k => { if (params.get(k)) f[k].value = params.get(k) })
+    sortSel.value = params.get('sort') || (isSeeker(me0) ? 'match' : 'new')
+
+    function syncUrl() {
+      const p = new URLSearchParams()
+      FIELDS.forEach(k => { if (f[k].value) p.set(k, f[k].value) })
+      if (sortSel.value !== sortSel.options[0].value) p.set('sort', sortSel.value)
+      const q = p.toString()
+      history.replaceState(null, '', q ? '?' + q : location.pathname)
+      document.getElementById('clear').hidden = !FIELDS.some(k => f[k].value)
+    }
 
     function draw() {
-      const f = document.getElementById('filters')
       const me = sessionUser()
       const data = db()
-      let items = [...data.listings].sort((a,b) => b.createdAt - a.createdAt)
-      if (f.area.value) items = items.filter(l => l.area === f.area.value)
-      if (f.max.value) items = items.filter(l => l.rent <= Number(f.max.value))
-      if (f.moveIn.value) items = items.filter(l => l.moveIn >= f.moveIn.value)
-      if (f.smoke.value) items = items.filter(l => l.habits.smoke === f.smoke.value)
+      let items = data.listings.map(l => ({ l, score: isSeeker(me) ? matchScore(me.habits, l.habits) : null }))
+      if (f.area.value) items = items.filter(({ l }) => l.area === f.area.value)
+      if (f.max.value) items = items.filter(({ l }) => l.rent <= Number(f.max.value))
+      if (f.size.value) items = items.filter(({ l }) => l.size >= Number(f.size.value))
+      if (f.moveIn.value) items = items.filter(({ l }) => l.moveIn <= f.moveIn.value)
+      if (f.smoke.value) items = items.filter(({ l }) => l.habits.smoke === f.smoke.value)
+      const sorters = {
+        new: (a, b) => b.l.createdAt - a.l.createdAt,
+        price: (a, b) => a.l.rent - b.l.rent,
+        'price-desc': (a, b) => b.l.rent - a.l.rent,
+        size: (a, b) => b.l.size - a.l.size,
+        move: (a, b) => a.l.moveIn.localeCompare(b.l.moveIn),
+        match: (a, b) => (b.score || 0) - (a.score || 0)
+      }
+      items.sort(sorters[sortSel.value] || sorters.new)
+      document.getElementById('count').textContent =
+        items.length === 1 ? '1 værelse' : `${items.length} værelser`
       document.getElementById('list').innerHTML = items.length
-        ? items.map(l => {
-            const score = isSeeker(me) ? matchScore(me.habits, l.habits) : null
-            return listingCard(l, score)
-          }).join('')
-        : '<div class="empty">Ingen værelser matcher filtrene.</div>'
+        ? items.map(({ l, score }) => listingCard(l, score)).join('')
+        : '<div class="empty">Ingen værelser matcher filtrene. Prøv at fjerne et filter.</div>'
+      syncUrl()
     }
-    document.getElementById('filters').onsubmit = e => { e.preventDefault(); draw() }
+    f.addEventListener('input', draw)
+    f.addEventListener('submit', e => { e.preventDefault(); draw() })
+    sortSel.addEventListener('change', draw)
+    document.getElementById('clear').onclick = () => { f.reset(); draw() }
     draw()
   </script>
 </body>
